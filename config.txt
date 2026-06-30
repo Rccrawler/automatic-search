@@ -1,0 +1,11 @@
+# Configuración del automatizador de búsquedas
+# ============================================
+
+# Número máximo de búsquedas a realizar (por ejemplo: 3). Poner 'none' para buscar todas.
+limite_busquedas = 90
+
+# Activar scroll en la página de resultados y dentro de los sitios web (true / false)
+hacer_scroll = true
+
+# Activar la navegación para entrar en las páginas web de los resultados (true / false)
+entrar_en_web = true
