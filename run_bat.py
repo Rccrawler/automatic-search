@@ -2,6 +2,10 @@ import subprocess
 import os
 import time
 import json
+import MoRandom
+import sys
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 def open_edge():
     """Ejecuta el archivo batch para abrir Microsoft Edge."""
@@ -23,6 +27,7 @@ def load_searches_from_json(filename='searches.json', max_results=None): # None 
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
             searches = data.get("searches", [])
+            MoRandom.shuffle(searches)  # Mezclar aleatoriamente antes de aplicar el límite
             if max_results is not None:
                 searches = searches[:max_results]
             return searches
@@ -219,11 +224,13 @@ def main():
     limite_busquedas = config['limite_busquedas']
     hacer_scroll = config['hacer_scroll']
     entrar_en_web = config['entrar_en_web']
+
+    palabras_usadas = []  # lista de palabras ya usadas
     
     print(f"Configuración cargada: Límite={limite_busquedas}, Scroll={hacer_scroll}, Entrar en Web={entrar_en_web}")
     
     # 1. Cargar las búsquedas desde el archivo JSON aplicando el límite
-    busquedas = load_searches_from_json(max_results=limite_busquedas)
+    busquedas = load_searches_from_json(max_results=limite_busquedas) # palabras a buscar
     if not busquedas:
         print("No se encontraron búsquedas en el archivo JSON. Saliendo...")
         return
@@ -239,7 +246,20 @@ def main():
         
         # 3. Iterar y buscar cada término
         for idx, palabra in enumerate(busquedas):
+
+            # Comprobamos que no se haya usado la palabra; si es así, pedimos otra
+            intentos = 0
+            max_intentos = len(busquedas) * 2
+            while palabra in palabras_usadas:
+                palabra = MoRandom.choice(busquedas)
+                intentos += 1
+                if intentos >= max_intentos:                    
+                    logging.error("No quedan palabras nuevas disponibles. Cerrando el programa.")
+                    sys.exit(1)
+            
+
             print(f"\n--- Búsqueda {idx + 1}/{len(busquedas)}: '{palabra}' ---")
+
             
             if idx > 0:
                 # Si no es la primera búsqueda, enfocamos la barra de direcciones con Ctrl+L (^l)
@@ -251,6 +271,9 @@ def main():
             # Enviar la palabra a buscar y presionar Enter de forma lenta
             print(f"Escribiendo '{palabra}' y buscando...")
             send_keys_to_edge(palabra, press_enter=True, slow=True)
+
+            # Guardamos la palabra usada en la lista de las usadas
+            palabras_usadas.append(palabra)  # Guardamos la palabra usada
             
             # Simular scroll e ingresar a una web respetando las configuraciones
             simulate_interaction_in_edge(hacer_scroll=hacer_scroll, entrar_en_web=entrar_en_web)
